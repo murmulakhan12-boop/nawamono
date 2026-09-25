@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HIRLA Recording Tool — Google Database Connected</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body{font-family:Inter,system-ui,sans-serif}
+.rec{animation:pulse 1s infinite}@keyframes pulse{50%{opacity:.35}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4">
+
+<div class="w-full max-w-3xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
+
+<header class="border-b border-slate-800 bg-slate-950/80 px-5 py-6 text-center">
+  <div class="text-xs uppercase tracking-[.35em] text-indigo-400">HIRLA PROJECT</div>
+  <div class="text-5xl md:text-6xl font-black tracking-widest text-white mt-1">HIRLA</div>
+  <div class="text-sm text-slate-400 mt-1">Single Audio Recording Tool</div>
+</header>
+
+<main class="p-5 md:p-6">
+
+<!-- Registration -->
+<section id="registration" class="space-y-5">
+  <div>
+    <h2 class="text-2xl font-bold text-indigo-400">👤 User Registration</h2>
+    <p class="text-xs text-slate-400 mt-1">1000+ users के लिए नाम, code और recording settings</p>
+  </div>
+
+  <input id="name" placeholder="Name / नाम (Example: LAKHAN)"
+    class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 outline-none focus:border-indigo-500">
+
+  <div>
+    <input id="code" placeholder="User Code / कोड (Example: 0002)" inputmode="numeric"
+      class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 outline-none focus:border-indigo-500">
+    <p class="text-[11px] text-slate-500 mt-1">यही code recording file names की शुरुआत तय करेगा — जैसे code 0002 दिया तो पहली file <b class="text-emerald-400">SNT_0002</b>, अगली <b class="text-emerald-400">SNT_0003</b>...</p>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-3">
+    <select id="gender" class="bg-slate-950 border border-slate-700 rounded-lg p-3">
+      <option value="">-- Select Gender --</option><option>Male</option><option>Female</option><option>Other</option>
+    </select>
+    <select id="language" class="bg-slate-950 border border-slate-700 rounded-lg p-3">
+      <option value="">-- Select Language --</option><option>Santali</option><option>Hindi</option>
+      <option>Bengali</option><option>Bhojpuri</option><option>Assamese</option><option>Haryanvi</option>
+    </select>
+  </div>
+
+  <div class="grid grid-cols-2 gap-3">
+    <select id="bits" class="bg-slate-950 border border-slate-700 rounded-lg p-3">
+      <option value="16">16-bit</option><option value="24">24-bit</option>
+    </select>
+    <select id="rate" class="bg-slate-950 border border-slate-700 rounded-lg p-3">
+      <option value="44100">44.1 kHz</option><option value="48000">48 kHz</option>
+    </select>
+  </div>
+
+  <div class="bg-slate-950 border border-slate-700 rounded-lg p-3">
+    <span class="text-xs text-slate-400">Channels</span>
+    <div class="font-semibold text-emerald-400 mt-1">Mono – 1 Channel</div>
+  </div>
+
+  <button onclick="registerUser()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-lg font-semibold">
+    Continue ➜
+  </button>
+</section>
+
+<!-- Dashboard -->
+<section id="dashboard" class="hidden space-y-5">
+  <div class="flex justify-between items-start border-b border-slate-800 pb-4">
+    <div>
+      <h2 id="welcome" class="text-xl font-bold"></h2>
+      <p id="profile" class="text-xs text-indigo-400 mt-1"></p>
+    </div>
+    <button onclick="resetUser()" class="text-xs bg-rose-900/40 border border-rose-700 text-rose-300 px-3 py-1 rounded">
+      Reset
+    </button>
+  </div>
+
+  <!-- TOTAL DURATION -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 text-center">
+    <p class="text-xs uppercase tracking-wider text-slate-400">Total Duration</p>
+    <div id="totalDuration" class="text-4xl font-mono font-bold text-emerald-400 mt-1">00:00:00</div>
+    <p class="text-[11px] text-slate-500 mt-1">अब तक की सभी recordings का कुल समय</p>
+  </div>
+
+  <!-- Current Script -->
+  <div class="bg-slate-950 border border-indigo-800/60 rounded-xl p-4">
+    <div class="flex justify-between items-center gap-3">
+      <div>
+        <p class="text-xs uppercase tracking-wider text-indigo-400">Current Script</p>
+        <p class="text-[11px] text-slate-500 mt-1">Serial / Code: <b id="scriptSerial" class="text-indigo-300">----</b></p>
+      </div>
+      <span id="scriptStatus" class="text-[11px] text-slate-500">Loading...</span>
+    </div>
+    <div id="scriptText" class="mt-3 bg-slate-900 border border-slate-800 rounded-lg p-4 text-sm leading-7 whitespace-pre-wrap min-h-[90px]">
+      Script load हो रहा है...
+    </div>
+  </div>
+
+  <!-- Next file preview -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-center">
+    <p class="text-xs uppercase tracking-wider text-slate-400">Next File Name</p>
+    <div id="nextFile" class="text-2xl font-mono font-bold text-indigo-400 mt-1"></div>
+  </div>
+
+  <!-- Recent -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+    <div class="flex justify-between items-center">
+      <h3 class="font-semibold">🕘 Recent Recording</h3>
+      <span id="recentCount" class="text-xs text-slate-500"></span>
+    </div>
+    <div id="recent" class="mt-3">
+      <p class="text-xs text-slate-500 text-center py-3">अभी कोई recording नहीं है।</p>
+    </div>
+  </div>
+
+  <!-- Duration History -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+    <h3 class="font-semibold">📋 Duration History</h3>
+    <p class="text-xs text-slate-500 mt-1">हर recording की duration और technical details</p>
+    <div id="history" class="mt-3 space-y-2 max-h-72 overflow-auto"></div>
+  </div>
+
+  <button onclick="openRecorder()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-lg font-semibold">
+    🎙️ Start Single Recording
+  </button>
+</section>
+
+<!-- Recorder -->
+<section id="recorder" class="hidden space-y-5">
+  <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+    <div>
+      <h2 class="text-xl font-bold text-indigo-400">🎙️ HIRLA Recording</h2>
+      <p id="recName" class="text-xs text-slate-400 mt-1"></p>
+    </div>
+    <span id="status" class="text-xs bg-amber-900/50 border border-amber-700 px-3 py-1 rounded-full">Ready</span>
+  </div>
+
+  <p id="sheetStatus" class="text-[11px] text-slate-500 text-center"></p>
+
+  <div class="grid grid-cols-3 gap-2 bg-slate-950 rounded-xl p-4 text-center text-xs">
+    <div><span class="block text-slate-500">Bit Depth</span><b id="rBits" class="text-emerald-400"></b></div>
+    <div><span class="block text-slate-500">Sample Rate</span><b id="rRate" class="text-emerald-400"></b></div>
+    <div><span class="block text-slate-500">Channels</span><b class="text-emerald-400">Mono – 1</b></div>
+  </div>
+
+  <!-- CURRENT SCRIPT -->
+  <div class="bg-indigo-950/40 border-2 border-indigo-700/70 rounded-xl p-4 shadow-lg">
+    <div class="flex justify-between items-center gap-3">
+      <div>
+        <p class="text-xs uppercase tracking-[.18em] text-indigo-300 font-bold">📜 Current Script</p>
+        <p class="text-[11px] text-slate-400 mt-1">Recording के लिए यही Script बोलना है • Serial:
+          <b id="recScriptSerial" class="text-emerald-400">----</b>
+        </p>
+      </div>
+      <span id="recScriptStatus" class="text-[11px] text-emerald-400">Ready</span>
+    </div>
+    <div id="recScriptText" class="mt-3 bg-slate-900 border border-indigo-800/60 rounded-lg p-4 text-base leading-8 whitespace-pre-wrap min-h-[110px] text-white">
+      Dashboard वाला Script यहाँ दिखाई देगा...
+    </div>
+  </div>
+
+  <div class="bg-black border border-slate-800 rounded-xl p-5 text-center">
+    <div id="timer" class="text-5xl font-mono font-bold">00:00:00</div>
+    <div class="h-5 bg-slate-800 rounded-full mt-5 overflow-hidden">
+      <div id="meter" class="h-full bg-emerald-500" style="width:0"></div>
+    </div>
+    <p id="level" class="text-xs text-slate-500 mt-2">Input level: -∞ dB</p>
+  </div>
+
+  <div class="grid grid-cols-3 gap-3">
+    <button id="start" onclick="startRecording()" class="bg-emerald-600 hover:bg-emerald-500 py-3 rounded-lg font-semibold">▶ Start</button>
+    <button id="pause" onclick="pauseResume()" disabled class="bg-amber-600 disabled:opacity-40 py-3 rounded-lg font-semibold">⏸ Pause</button>
+    <button id="stop" onclick="stopRecording()" disabled class="bg-rose-600 disabled:opacity-40 py-3 rounded-lg font-semibold">⏹ Stop</button>
+  </div>
+
+  <button onclick="backDashboard()" class="w-full bg-slate-700 hover:bg-slate-600 py-2 rounded-lg text-sm">
+    ← Dashboard
+  </button>
+
+  <div id="downloadBox" class="hidden bg-emerald-950/40 border border-emerald-800 rounded-xl p-4">
+    <p class="font-semibold text-emerald-400">✅ WAV Ready</p>
+    <p id="downloadInfo" class="text-xs text-slate-400 mt-1"></p>
+    <a id="download" class="inline-block mt-3 bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded-lg font-semibold cursor-pointer">
+      ⬇ Download WAV
+    </a>
+  </div>
+</section>
+
+</main>
+</div>
+
+<script>
+let user=null,stream=null,ctx=null,src=null,proc=null,analyser=null;
+let chunks=[],recording=false,paused=false,elapsed=0,started=0,clock=null,raf=null,url=null;
+
+// ===== GOOGLE SCRIPT URL UPDATED =====
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbznKFJ44V0qDq4EJVMuKUgsZXHbTevR1VSiTSWGtMn_mSlF4c7SUsQCg9_AJB-GJCnd/exec";
+
+const $=id=>document.getElementById(id);
+
+function blobToBase64(blob){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onloadend=()=>res(r.result.split(",")[1]);
+    r.onerror=rej;
+    r.readAsDataURL(blob);
+  });
+}
+
+async function sendRecordingMeta(meta){
+  if(!GOOGLE_SCRIPT_URL)return;
+  try{
+    await fetch(GOOGLE_SCRIPT_URL,{
+      method:"POST",
+      mode:"no-cors",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({action:"recordMeta",...meta})
+    });
+    $("sheetStatus").textContent="⚡ Recording details Sheet me turant bhej di gayi.";
+  }catch(e){
+    $("sheetStatus").textContent="⚠️ Sheet sync fail: "+e.message;
+  }
+}
+
+async function uploadWavToGoogle(blob,filename,meta){
+  if(!GOOGLE_SCRIPT_URL)return;
+  try{
+    const audioBase64=await blobToBase64(blob);
+    await fetch(GOOGLE_SCRIPT_URL,{
+      method:"POST",
+      mode:"no-cors",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({action:"uploadAudio",audioBase64,filename,...meta})
+    });
+    $("sheetStatus").textContent="✅ WAV Drive me upload ho gaya aur Link Sheet me add hua.";
+  }catch(e){
+    $("sheetStatus").textContent="⚠️ WAV upload fail: "+e.message;
+  }
+}
+
+function normalizeScriptCode(v){
+  const s=String(v||"").trim();
+  if(!s)return "";
+  return /^\d+$/.test(s) ? String(parseInt(s,10)) : s.toLowerCase();
+}
+
+let scriptJsonpSeq=0;
+function loadCurrentScript(){
+  const serial=padCode(getCounter());
+  $("scriptSerial").textContent=serial;
+  $("scriptStatus").textContent="Loading...";
+  $("scriptText").textContent="Script load हो रहा है...";
+
+  if(!GOOGLE_SCRIPT_URL){
+    $("scriptStatus").textContent="URL missing";
+    $("scriptText").textContent="Apps Script URL सेट नहीं है।";
+    return;
+  }
+
+  const callback="hirlaScriptCallback_"+Date.now()+"_"+(++scriptJsonpSeq);
+  const tag=document.createElement("script");
+  let done=false;
+  const timer=setTimeout(()=>{
+    if(done)return;
+    done=true;
+    try{tag.remove()}catch(e){}
+    delete window[callback];
+    $("scriptStatus").textContent="Load failed";
+    $("scriptText").textContent="Script load नहीं हो पाया। Apps Script Web App URL और deployment check करें।";
+  },15000);
+
+  window[callback]=function(out){
+    if(done)return;
+    done=true;
+    clearTimeout(timer);
+    try{tag.remove()}catch(e){}
+    delete window[callback];
+
+    if(out && out.status==="success" && out.found){
+      $("scriptStatus").textContent="✅ Loaded";
+      $("scriptText").textContent=out.utterance || "(Utterance खाली है)";
+    }else{
+      $("scriptStatus").textContent="Not found";
+      $("scriptText").textContent="इस serial/code के लिए Script tab में Utterances नहीं मिला।";
+    }
+  };
+
+  const code=encodeURIComponent(normalizeScriptCode(getCounter()));
+  tag.src=GOOGLE_SCRIPT_URL+"?action=getScript&code="+code+"&callback="+encodeURIComponent(callback)+"&_="+Date.now();
+  tag.onerror=function(){
+    if(done)return;
+    done=true;
+    clearTimeout(timer);
+    delete window[callback];
+    $("scriptStatus").textContent="Load failed";
+    $("scriptText").textContent="Apps Script Web App तक पहुँचना संभव नहीं हुआ।";
+  };
+  document.body.appendChild(tag);
+}
+
+function historyKey(){return "HIRLA_HISTORY_"+user.code}
+function counterKey(){return "HIRLA_COUNTER_"+user.code}
+function getHistory(){try{return JSON.parse(localStorage.getItem(historyKey())||"[]")}catch(e){return[]}}
+function saveHistory(h){localStorage.setItem(historyKey(),JSON.stringify(h))}
+
+function getCounter(){
+  const stored=localStorage.getItem(counterKey());
+  if(stored!==null)return parseInt(stored,10);
+  const start=parseInt(user.code,10);
+  localStorage.setItem(counterKey(),String(start));
+  return start;
+}
+function bumpCounter(){
+  const next=getCounter()+1;
+  localStorage.setItem(counterKey(),String(next));
+}
+function padCode(n){
+  const s=String(n);
+  return s.padStart(4,"0");
+}
+function nextFileName(){
+  return "SNT_"+padCode(getCounter())+".WAV";
+}
+
+function fmt(sec){
+  sec=Math.max(0,Math.floor(sec));
+  return String(Math.floor(sec/3600)).padStart(2,"0")+":"+String(Math.floor(sec%3600/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0");
+}
+function esc(s){return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+
+function registerUser(){
+  const n=$("name").value.trim();
+  const rawCode=$("code").value.trim();
+  if(!n||!rawCode||!$("gender").value\vert{}\vert{}!$("language").value){alert("Name, Code, Gender और Language भरें।");return}
+  if(!/^\d+$/.test(rawCode)){alert("Code सिर्फ अंकों में डालें, जैसे 0002");return}
+  user={name:n,code:String(parseInt(rawCode,10)),gender:$("gender").value,language:$("language").value,bits:+$("bits").value,rate:+$("rate").value};
+  localStorage.setItem("HIRLA_CURRENT_USER",JSON.stringify(user));
+  showDashboard();
+}
+function showDashboard(){
+  $("registration").classList.add("hidden");$("recorder").classList.add("hidden");$("dashboard").classList.remove("hidden");
+  $("welcome").textContent="Welcome, "+user.name;
+  $("profile").textContent=user.gender+" • "+user.language+" • Code "+padCode(user.code);
+  $("nextFile").textContent=nextFileName();
+  renderHistory();
+  loadCurrentScript();
+}
+function renderHistory(){
+  const h=getHistory(), total=h.reduce((a,x)=>a+x.duration,0);
+  $("totalDuration").textContent=fmt(total);
+  $("recentCount").textContent=h.length?("Latest of "+h.length):"";
+  $("nextFile").textContent=nextFileName();
+  const recent=$("recent"), hist=$("history");
+  if(!h.length){
+    recent.innerHTML='<p class="text-xs text-slate-500 text-center py-3">अभी कोई recording नहीं है।</p>';
+    hist.innerHTML='<p class="text-xs text-slate-500 text-center py-3">Duration history खाली है।</p>'; return;
+  }
+  const r=h[h.length-1];
+  recent.innerHTML=`<div class="bg-slate-800 border border-emerald-800/50 rounded-lg p-3 flex justify-between gap-3">
+    <div><p class="font-medium text-sm">${esc(r.file)}</p><p class="text-[11px] text-slate-500">${esc(r.date)}</p></div>
+    <div class="text-right"><b class="text-emerald-400">${fmt(r.duration)}</b><p class="text-[10px] text-slate-500">${r.bits}-bit • ${r.rate/1000} kHz • Mono</p></div>
+  </div>`;
+  hist.innerHTML=h.slice().reverse().map(r=>`<div class="bg-slate-800 border border-slate-700 rounded-lg p-3 flex justify-between gap-3">
+    <div><p class="text-sm font-medium">${esc(r.file)}</p><p class="text-[11px] text-slate-500">${esc(r.date)}</p></div>
+    <div class="text-right"><b class="text-emerald-400">${fmt(r.duration)}</b><p class="text-[10px] text-slate-500">${r.bits}-bit • ${r.rate/1000} kHz • Mono</p></div>
+  </div>`).join("");
+}
+function openRecorder(){
+  $("dashboard").classList.add("hidden");$("recorder").classList.remove("hidden");
+  $("recName").textContent="User: "+user.name+" • Code "+padCode(user.code)+" • Next: "+nextFileName();
+  $("rBits").textContent=user.bits+"-bit";$("rRate").textContent=user.rate/1000+" kHz";
+
+  $("recScriptSerial").textContent=$("scriptSerial").textContent || padCode(getCounter());
+  $("recScriptText").textContent=$("scriptText").textContent || "Script load हो रहा है...";
+  $("recScriptStatus").textContent=$("scriptStatus").textContent || "Ready";
+
+  loadRecorderScript();
+}
+
+function loadRecorderScript(){
+  const serial=padCode(getCounter());
+  $("recScriptSerial").textContent=serial;
+  $("recScriptStatus").textContent="Loading...";
+  $("recScriptText").textContent="Script load हो रहा है...";
+
+  if(!GOOGLE_SCRIPT_URL){
+    $("recScriptStatus").textContent="URL missing";
+    $("recScriptText").textContent="Apps Script URL सेट नहीं है।";
+    return;
+  }
+
+  const callback="hirlaRecorderScriptCallback_"+Date.now()+"_"+(++scriptJsonpSeq);
+  const tag=document.createElement("script");
+  let done=false;
+  const timer=setTimeout(()=>{
+    if(done)return;
+    done=true;
+    try{tag.remove()}catch(e){}
+    delete window[callback];
+    $("recScriptStatus").textContent="Load failed";
+    $("recScriptText").textContent="Script load नहीं हो पाया।";
+  },15000);
+
+  window[callback]=function(out){
+    if(done)return;
+    done=true;
+    clearTimeout(timer);
+    try{tag.remove()}catch(e){}
+    delete window[callback];
+
+    if(out && out.status==="success" && out.found){
+      $("recScriptStatus").textContent="✅ Loaded";
+      $("recScriptText").textContent=out.utterance || "(Utterance खाली है)";
+    }else{
+      $("recScriptStatus").textContent="Not found";
+      $("recScriptText").textContent="इस serial/code के लिए Script tab में Utterances नहीं मिला।";
+    }
+  };
+
+  const code=encodeURIComponent(normalizeScriptCode(getCounter()));
+  tag.src=GOOGLE_SCRIPT_URL+"?action=getScript&code="+code+"&callback="+encodeURIComponent(callback)+"&_="+Date.now();
+  tag.onerror=function(){
+    if(done)return;
+    done=true;
+    clearTimeout(timer);
+    delete window[callback];
+    $("recScriptStatus").textContent="Load failed";
+    $("recScriptText").textContent="Apps Script Web App तक पहुँचना संभव नहीं हुआ।";
+  };
+  document.body.appendChild(tag);
+}
+
+async function startRecording(){
+  try{
+    loadRecorderScript();
+    if(!navigator.mediaDevices?.getUserMedia)throw new Error("Microphone API उपलब्ध नहीं है। Chrome/Edge में HTTPS या localhost से खोलें।");
+    stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:{ideal:1},echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    ctx=new(window.AudioContext||window.webkitAudioContext)();await ctx.resume();
+    src=ctx.createMediaStreamSource(stream);analyser=ctx.createAnalyser();analyser.fftSize=2048;
+    proc=ctx.createScriptProcessor(4096,1,1);src.connect(analyser);src.connect(proc);
+    const mute=ctx.createGain();mute.gain.value=0;proc.connect(mute);mute.connect(ctx.destination);
+    chunks=[];recording=true;paused=false;elapsed=0;started=performance.now();
+    proc.onaudioprocess=e=>{if(recording&&!paused)chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)))};
+    $("start").disabled=true;$("pause").disabled=false;$("stop").disabled=false;$("downloadBox").classList.add("hidden");
+    $("status").textContent="🔴 Recording";$("status").className="rec text-xs bg-rose-900/50 border border-rose-700 px-3 py-1 rounded-full";
+    clock=setInterval(updateTimer,100);meterLoop();
+  }catch(e){cleanup();alert("Recording start नहीं हुआ:\n"+e.message)}
+}
+
+function updateTimer(){let t=elapsed;if(recording&&!paused)t+=(performance.now()-started)/1000;$("timer").textContent=fmt(t)}
+function meterLoop(){
+  if(!analyser)return;const a=new Uint8Array(analyser.fftSize);analyser.getByteTimeDomainData(a);let s=0;
+  for(const v of a){const n=(v-128)/128;s+=n*n}
+  const rms=Math.sqrt(s/a.length),db=rms?20*Math.log10(rms):-Infinity;
+  $("meter").style.width=Math.max(0,Math.min(100,(db+60)/60*100))+"%";
+  $("level").textContent="Input level: "+(db===-Infinity?"-∞":db.toFixed(1))+" dB";raf=requestAnimationFrame(meterLoop);
+}
+
+function pauseResume(){
+  if(!recording)return;
+  if(!paused){elapsed+=(performance.now()-started)/1000;paused=true;$("pause").textContent="▶ Resume";$("status").textContent="⏸ Paused"}
+  else{paused=false;started=performance.now();$("pause").textContent="⏸ Pause";$("status").textContent="🔴 Recording"}
+}
+
+async function stopRecording(){
+  if(!recording)return;
+  if(!paused)elapsed+=(performance.now()-started)/1000;
+  recording=false;
+  clearInterval(clock);cancelAnimationFrame(raf);updateTimer();
+
+  $("start").disabled=false;$("pause").disabled=true;$("stop").disabled=true;
+  $("status").textContent="Saving details...";
+
+  const filename=nextFileName();
+  const nowStr=new Date().toLocaleString("en-IN");
+  const meta={
+    date:nowStr,name:user.name,code:padCode(user.code),gender:user.gender,
+    language:user.language,bits:user.bits,rate:user.rate,duration:elapsed.toFixed(2)
+  };
+
+  sendRecordingMeta({filename,...meta});
+
+  const h=getHistory();
+  h.push({file:filename,duration:elapsed,bits:user.bits,rate:user.rate,date:nowStr});
+  saveHistory(h);
+  bumpCounter();
+  renderHistory();
+  loadCurrentScript();
+  loadRecorderScript();
+  $("recName").textContent="User: "+user.name+" • Code "+padCode(user.code)+" • Next: "+nextFileName();
+
+  $("status").textContent="Processing WAV...";
+  try{
+    const inputRate=ctx.sampleRate,data=merge(chunks);
+    cleanup();
+    const samples=await resample(data,inputRate,user.rate),wav=encodeWav(samples,user.rate,user.bits);
+    const blob=new Blob([wav],{type:"audio/wav"});
+
+    if(url)URL.revokeObjectURL(url);
+    url=URL.createObjectURL(blob);
+    $("download").href=url;$("download").download=filename;
+    $("downloadInfo").textContent=`${filename} • ${(blob.size/1048576).toFixed(2)} MB • ${fmt(elapsed)} • ${user.bits}-bit • ${user.rate/1000} kHz • Mono`;
+    $("download").textContent="⬇ Download "+filename;
+    $("downloadBox").classList.remove("hidden");
+    $("status").textContent="✅ WAV Ready";
+
+    uploadWavToGoogle(blob,filename,meta);
+  }catch(e){
+    cleanup();
+    $("status").textContent="Error";
+    alert("WAV export failed: "+e.message);
+  }
+}
+
+function merge(a){let n=0;a.forEach(x=>n+=x.length);const o=new Float32Array(n);let p=0;a.forEach(x=>{o.set(x,p);p+=x.length});return o}
+async function resample(d,ir,tr){
+  if(ir===tr)return d;
+  const len=Math.ceil(d.length*tr/ir),o=new OfflineAudioContext(1,len,tr),b=o.createBuffer(1,d.length,ir);b.copyToChannel(d,0);
+  const s=o.createBufferSource();s.buffer=b;s.connect(o.destination);s.start();return(await o.startRendering()).getChannelData(0)
+}
+function ws(v,o,s){for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))}
+function encodeWav(a,r,bits){
+  const bps=bits/8,size=a.length*bps,buf=new ArrayBuffer(44+size),v=new DataView(buf);
+  ws(v,0,"RIFF");v.setUint32(4,36+size,true);ws(v,8,"WAVE");ws(v,12,"fmt ");
+  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,r,true);
+  v.setUint32(28,r*bps,true);v.setUint16(32,bps,true);v.setUint16(34,bits,true);ws(v,36,"data");v.setUint32(40,size,true);
+  let p=44;
+  if(bits===16)a.forEach(x=>{x=Math.max(-1,Math.min(1,x));v.setInt16(p,Math.round(x<0?x*32768:x*32767),true);p+=2});
+  else a.forEach(x=>{x=Math.max(-1,Math.min(1,x));let n=Math.round(x<0?x*8388608:x*8388607);v.setUint8(p,n&255);v.setUint8(p+1,(n>>8)&255);v.setUint8(p+2,(n>>16)&255);p+=3});
+  return buf
+}
+function cleanup(){
+  if(proc){try{proc.disconnect()}catch(e){}proc.onaudioprocess=null}
+  if(src)try{src.disconnect()}catch(e){} if(analyser)try{analyser.disconnect()}catch(e){}
+  if(stream)stream.getTracks().forEach(t=>t.stop()); if(ctx)try{ctx.close()}catch(e){}
+  proc=src=analyser=stream=ctx=null;$("meter").style.width="0\%";$("level").textContent="Input level: -∞ dB";
+}
+function backDashboard(){if(recording){if(!confirm("Recording बंद करें?"))return;recording=false;cleanup()}clearInterval(clock);showDashboard()}
+function resetUser(){
+  if(recording){recording=false;cleanup()}
+  if(confirm("User profile और उसकी Duration History हटानी है? (Code counter भी reset होगा)")){
+    localStorage.removeItem("HIRLA_CURRENT_USER");
+    localStorage.removeItem(historyKey());
+    localStorage.removeItem(counterKey());
+    user=null;
+    $("dashboard").classList.add("hidden");$("recorder").classList.add("hidden");$("registration").classList.remove("hidden");
+  }
+}
+window.addEventListener("load",()=>{
+  try{
+    user=JSON.parse(localStorage.getItem("HIRLA_CURRENT_USER"));
+    if(user){
+      if(user.code===undefined)user.code="0";
+      showDashboard();
+    }
+  }catch(e){}
+});
+window.addEventListener("beforeunload",()=>{if(url)URL.revokeObjectURL(url);cleanup()});
+</script>
+</body>
+</html>
